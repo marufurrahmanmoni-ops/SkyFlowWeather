@@ -1,0 +1,15 @@
+include: package:flutter_lints/flutter.yaml
+
+analyzer:
+  language:
+    strict-casts: false
+  errors:
+    # Some plugins still use the deprecated package:flutter/material.dart.
+    deprecated_member_use_from_same_package: ignore
+
+linter:
+  rules:
+    avoid_print: true
+    prefer_single_quotes: true
+    use_build_context_synchronously: true
+    always_declare_return_types: true

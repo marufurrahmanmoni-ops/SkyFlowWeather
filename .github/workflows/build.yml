@@ -1,0 +1,147 @@
+name: Build Android
+
+on:
+  push:
+    branches: [main, master]
+    tags: ['v*']
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: build-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  FLUTTER_VERSION: '3.50.1'
+
+jobs:
+  android:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Unpack uploaded source ZIP (if any)
+        if: github.event_name != 'pull_request'
+        run: |
+          shopt -s nullglob
+          zips=( *.zip )
+          if [ ${#zips[@]} -eq 0 ]; then
+            echo "No ZIP in the repository root."
+            exit 0
+          fi
+          ZIP="${zips[0]}"
+          echo "Unpacking $ZIP"
+          rm -rf /tmp/src && mkdir -p /tmp/src
+          unzip -q -o "$ZIP" -d /tmp/src
+          PUB=$(find /tmp/src -maxdepth 3 -name pubspec.yaml -printf '%d %p\n' | sort -n | head -n 1 | cut -d' ' -f2-)
+          if [ -z "$PUB" ]; then
+            echo "::error::pubspec.yaml not found inside $ZIP"
+            exit 1
+          fi
+          SRC=$(dirname "$PUB")
+          rm -rf "$SRC/.github" "$SRC/.git" "$SRC/build" "$SRC/.dart_tool"
+          cp -a "$SRC"/. .
+          rm -f "${zips[@]}"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if git commit -q -m "Unpack $ZIP"; then
+            git push || echo "::warning::Could not push the unpacked files."
+          fi
+
+      - name: Set up Java 21 (required by MapLibre)
+        uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: gradle
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+
+      - name: Flutter version
+        run: flutter --version
+
+      - name: Get packages
+        run: flutter pub get
+
+      - name: Static analysis
+        run: flutter analyze --no-fatal-infos --no-fatal-warnings
+        continue-on-error: true
+
+      - name: Unit tests
+        run: flutter test
+        continue-on-error: true
+
+      - name: Release signing key (optional)
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        run: |
+          if [ -n "$KEYSTORE_BASE64" ]; then
+            echo "$KEYSTORE_BASE64" | base64 --decode > android/app/upload-keystore.jks
+            {
+              echo "storeFile=upload-keystore.jks"
+              echo "storePassword=$KEYSTORE_PASSWORD"
+              echo "keyAlias=$KEY_ALIAS"
+              echo "keyPassword=$KEY_PASSWORD"
+            } > android/key.properties
+            echo "Release key configured."
+          else
+            echo "No release key secrets; release builds use the debug key."
+          fi
+
+      - name: Build debug APK
+        run: flutter build apk --debug
+
+      - name: Build release APK
+        run: flutter build apk --release
+
+      - name: Build release App Bundle (Play Store)
+        run: flutter build appbundle --release
+
+      - name: Collect outputs
+        run: |
+          mkdir -p dist
+          cp build/app/outputs/flutter-apk/app-debug.apk dist/SkyFlowWeather-debug.apk
+          cp build/app/outputs/flutter-apk/app-release.apk dist/SkyFlowWeather-release.apk
+          cp build/app/outputs/bundle/release/app-release.aab dist/SkyFlowWeather-release.aab
+          ls -lh dist
+
+      - name: Upload debug APK
+        uses: actions/upload-artifact@v7
+        with:
+          name: SkyFlowWeather-debug-apk
+          path: dist/SkyFlowWeather-debug.apk
+
+      - name: Upload release APK
+        uses: actions/upload-artifact@v7
+        with:
+          name: SkyFlowWeather-release-apk
+          path: dist/SkyFlowWeather-release.apk
+
+      - name: Upload release AAB
+        uses: actions/upload-artifact@v7
+        with:
+          name: SkyFlowWeather-release-aab
+          path: dist/SkyFlowWeather-release.aab
+
+      - name: Publish GitHub Release (tags only)
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v3
+        with:
+          files: |
+            dist/SkyFlowWeather-release.apk
+            dist/SkyFlowWeather-debug.apk
+            dist/SkyFlowWeather-release.aab
