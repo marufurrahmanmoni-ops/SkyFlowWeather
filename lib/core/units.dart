@@ -22,7 +22,7 @@ enum Quantity {
   percent, // %
   distance, // m
   energy, // J/kg
-  index, // unitless
+  indexValue, // unitless (UV index, etc.)
   waveHeight, // m
   period, // s
   direction, // degrees
@@ -70,7 +70,7 @@ class UnitFormatter {
         return v / 1000.0; // km
       case Quantity.percent:
       case Quantity.energy:
-      case Quantity.index:
+      case Quantity.indexValue:
       case Quantity.waveHeight:
       case Quantity.period:
       case Quantity.direction:
@@ -105,7 +105,7 @@ class UnitFormatter {
         return v * 1000.0;
       case Quantity.percent:
       case Quantity.energy:
-      case Quantity.index:
+      case Quantity.indexValue:
       case Quantity.waveHeight:
       case Quantity.period:
       case Quantity.direction:
@@ -142,7 +142,7 @@ class UnitFormatter {
         return 'km';
       case Quantity.energy:
         return 'J/kg';
-      case Quantity.index:
+      case Quantity.indexValue:
         return '';
       case Quantity.waveHeight:
         return 'm';
@@ -171,7 +171,7 @@ class UnitFormatter {
         return 1;
       case Quantity.distance:
         return displayValue < 10 ? 1 : 0;
-      case Quantity.index:
+      case Quantity.indexValue:
         return displayValue.abs() < 10 ? 1 : 0;
       case Quantity.waveHeight:
         return 1;

@@ -18,7 +18,7 @@ if (hasReleaseKey) {
 
 android {
     namespace = "com.skyflow.weather"
-    compileSdk = flutter.compileSdkVersion
+    compileSdk = maxOf(37, flutter.compileSdkVersion)
     ndkVersion = flutter.ndkVersion
 
     compileOptions {

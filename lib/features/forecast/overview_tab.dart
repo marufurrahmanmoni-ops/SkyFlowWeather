@@ -231,7 +231,7 @@ class _DetailsGrid extends StatelessWidget {
       _Detail(Icons.cloud, s.cloudCover, units.format(Quantity.percent, c['cloud_cover']), null),
       _Detail(Icons.visibility, s.visibility, units.format(Quantity.distance, c['visibility']), null),
       _Detail(Icons.thermostat, s.dewPoint, units.format(Quantity.temperature, dew), null),
-      _Detail(Icons.wb_sunny, s.uvIndex, units.format(Quantity.index, uv),
+      _Detail(Icons.wb_sunny, s.uvIndex, units.format(Quantity.indexValue, uv),
           uv == null ? null : s.uvCategory(_uvIndex(uv))),
     ];
     return LayoutBuilder(builder: (context, constraints) {

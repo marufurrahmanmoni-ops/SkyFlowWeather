@@ -302,7 +302,7 @@ class _AirgramPainter extends CustomPainter {
         final sp = series.at('wind_speed_${l}hPa', start + i);
         if (d == null || sp == null) continue;
         final a = (d + 180) * math.pi / 180;
-        final len = 5 + math.min(9.0, sp / 15);
+        final double len = 5.0 + math.min(9.0, sp / 15.0);
         final c = Offset(geo.xFor(i), yy);
         final v = Offset(math.sin(a), -math.cos(a)) * len;
         canvas.drawLine(c - v, c + v, arrow);
