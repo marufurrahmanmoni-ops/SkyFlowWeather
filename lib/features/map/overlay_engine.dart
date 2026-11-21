@@ -200,25 +200,40 @@ class OverlayEngine extends ChangeNotifier implements WindFieldProvider {
     }
 
     try {
-      final main = await _repo.load(spec, _layer.group.request,
+      final isWindLayer = _layer.group.id == LayerGroups.wind.id;
+      // The colour layer is requested first (it gets the request budget
+      // first); wind downloads alongside it instead of after it.
+      final mainFuture = _repo.load(spec, _layer.group.request,
           onThrottle: throttle, isCancelled: cancelled);
-      GridField? wind;
-      if (_layer.group.id == LayerGroups.wind.id) {
-        wind = main;
-      } else if (_needWind) {
-        wind = await _repo.load(spec, LayerGroups.wind.request,
-            onThrottle: throttle, isCancelled: cancelled);
-      }
+      final Future<GridField?>? windFuture = (!isWindLayer && _needWind)
+          ? _repo
+              .load(spec, LayerGroups.wind.request, onThrottle: throttle, isCancelled: cancelled)
+              .then<GridField?>((w) => w, onError: (Object e) {
+              // A wind failure must not hide the colour layer.
+              debugPrint('Wind layer failed: $e');
+              return null;
+            })
+          : null;
+      final main = await mainFuture;
       if (cancelled()) return;
       final previousTime = selectedTime;
       _spec = spec;
       _field = main;
-      _wind = wind;
+      // Keep the previous wind field until the new one arrives.
+      if (isWindLayer) _wind = main;
       _png.clear();
       _renderToken++;
       _rebuildTimeline(previousTime);
       _error = null;
       unawaited(_showFrame(_frameIndex));
+      notifyListeners();
+      if (windFuture != null) {
+        final wind = await windFuture;
+        if (cancelled()) return;
+        if (wind != null) _wind = wind;
+      } else if (!isWindLayer) {
+        _wind = null;
+      }
     } on ApiException catch (e) {
       if (!cancelled() && e.message != 'cancelled') _error = e;
     } catch (e) {

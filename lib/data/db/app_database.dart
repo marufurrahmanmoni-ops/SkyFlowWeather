@@ -177,6 +177,13 @@ class AppDatabase {
     await db.delete('http_cache', where: 'fetched_at < ?', whereArgs: [cutoff]);
   }
 
+  /// Removes entries whose key starts with [prefix] and are older than [maxAge].
+  Future<void> pruneCachePrefix(String prefix, Duration maxAge) async {
+    final cutoff = DateTime.now().subtract(maxAge).millisecondsSinceEpoch;
+    await db.delete('http_cache',
+        where: 'key LIKE ? AND fetched_at < ?', whereArgs: ['$prefix%', cutoff]);
+  }
+
   Future<void> clearCache() => db.delete('http_cache');
 
   // ------------------------------------------------------------- alert log

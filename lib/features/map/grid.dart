@@ -271,6 +271,9 @@ class GridRepository {
       }
     }
 
+    // Batches are requested in parallel (still inside the per-minute budget)
+    // instead of one after another.
+    final pending = <Future<void>>[];
     for (var b = 0; b < missing.length; b += _batchSize) {
       if (isCancelled?.call() ?? false) {
         throw const ApiException(ApiErrorKind.unknown, message: 'cancelled');
@@ -288,14 +291,16 @@ class GridRepository {
       final points = [
         for (final i in batch) GeoPoint(spec.latAt(i ~/ spec.cols), spec.lonAt(i % spec.cols)),
       ];
-      final result = await _source.fetch(request, points);
-      for (var k = 0; k < batch.length; k++) {
-        final s = k < result.length ? result[k] : null;
-        if (s == null) continue;
-        series[batch[k]] = s;
-        _cache.put(_key(request, points[k].lat, points[k].lon), s);
-      }
+      pending.add(_source.fetch(request, points).then((result) {
+        for (var k = 0; k < batch.length; k++) {
+          final s = k < result.length ? result[k] : null;
+          if (s == null) continue;
+          series[batch[k]] = s;
+          _cache.put(_key(request, points[k].lat, points[k].lon), s);
+        }
+      }));
     }
+    await Future.wait(pending);
 
     // Assemble on a common hourly time axis.
     var start = 1 << 62;

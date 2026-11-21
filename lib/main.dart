@@ -6,21 +6,20 @@ import 'package:intl/date_symbol_data_local.dart';
 
 import 'app.dart';
 import 'data/db/app_database.dart';
+import 'data/sources/open_meteo.dart' show gridCachePrefix;
 import 'services/background_worker.dart';
 import 'services/notification_service.dart';
 import 'state/providers.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await initializeDateFormatting();
-  final db = await AppDatabase.open();
+  // Only what the first frame needs is awaited; the rest runs after runApp.
+  final (_, db) = await (
+    // The app only ships English and Bengali.
+    Future.wait([initializeDateFormatting('en'), initializeDateFormatting('bn')]),
+    AppDatabase.open(),
+  ).wait;
   final settings = await loadSettings(db);
-
-  // Drop cached responses older than a week to keep storage small.
-  unawaited(db.pruneCache(const Duration(days: 7)).catchError((Object _) {}));
-  unawaited(NotificationService.instance.init());
-  await BackgroundWorker.initialize();
-  if (settings.backgroundAlerts) unawaited(BackgroundWorker.setEnabled(true));
 
   runApp(
     ProviderScope(
@@ -33,4 +32,12 @@ Future<void> main() async {
       child: const SkyFlowApp(),
     ),
   );
+
+  // Drop old cached responses to keep storage small (map grids go stale fast).
+  unawaited(db.pruneCache(const Duration(days: 7)).catchError((Object _) {}));
+  unawaited(db.pruneCachePrefix(gridCachePrefix, const Duration(hours: 12)).catchError((Object _) {}));
+  unawaited(NotificationService.instance.init());
+  unawaited(BackgroundWorker.initialize().then((_) {
+    if (settings.backgroundAlerts) return BackgroundWorker.setEnabled(true);
+  }));
 }

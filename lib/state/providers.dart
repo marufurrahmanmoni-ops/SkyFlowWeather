@@ -21,6 +21,7 @@ import '../data/sources/geocoding.dart';
 import '../data/sources/interfaces.dart';
 import '../data/sources/open_meteo.dart';
 import '../data/sources/warnings_sources.dart';
+import '../features/map/grid.dart' show GridRepository;
 import '../services/alert_engine.dart';
 import '../services/location_service.dart';
 
@@ -60,6 +61,12 @@ final reverseGeocodingSourceProvider = Provider<ReverseGeocodingSource>(
 
 final gridSourceProvider = Provider<GridSource>(
   (ref) => OpenMeteoGridSource(ref.watch(fetcherProvider)),
+);
+
+/// Shared so downloaded map data (and the request budget) survive leaving
+/// and reopening the Map tab.
+final gridRepositoryProvider = Provider<GridRepository>(
+  (ref) => GridRepository(ref.watch(gridSourceProvider)),
 );
 
 final gdacsSourceProvider = Provider<GdacsSource>(

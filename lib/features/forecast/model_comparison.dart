@@ -398,7 +398,7 @@ class _DailyComparisonTable extends StatelessWidget {
 
     double? summary(_ModelSeries m, List<int> idx) {
       final vals = [for (final i in idx) if (i < m.values.length && m.values[i] != null) m.values[i]!];
-      if (vals.length < idx.length * 0.75) return null;
+      if (vals.isEmpty || vals.length < idx.length * 0.75) return null;
       switch (variable) {
         case CompareVariable.temperature:
         case CompareVariable.windSpeed:

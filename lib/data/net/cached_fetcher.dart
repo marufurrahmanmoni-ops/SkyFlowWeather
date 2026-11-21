@@ -38,8 +38,9 @@ class CachedFetcher {
     Map<String, String>? headers,
     bool forceRefresh = false,
     bool persist = true,
+    String keyPrefix = '',
   }) {
-    final key = cacheKey(url, query);
+    final key = '$keyPrefix${cacheKey(url, query)}';
     final existing = _inFlight[key];
     if (existing != null) return existing;
     final future = _load(url, key, query, maxAge, headers, forceRefresh, persist);

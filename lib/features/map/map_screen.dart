@@ -59,7 +59,7 @@ class _MapScreenState extends ConsumerState<MapScreen> with SingleTickerProvider
     final settings = ref.read(settingsProvider);
     final layer = LayerCatalog.byId(settings.lastLayer);
     _engine = OverlayEngine(
-      GridRepository(ref.read(gridSourceProvider)),
+      ref.read(gridRepositoryProvider),
       layer: layer,
       opacity: settings.opacityFor(layer.id),
     );

@@ -1,3 +1,5 @@
+import 'dart:convert';
+import 'dart:isolate';
 import 'dart:typed_data';
 
 import '../../core/constants.dart';
@@ -275,40 +277,78 @@ class OpenMeteoGridSource implements GridSource {
       'timeformat': 'unixtime',
       ...request.extra,
     });
-    final data = await _fetcher.getJsonDirect(request.url, query: query);
-    if (data is Map && data['error'] == true) {
-      throw ApiException(ApiErrorKind.badRequest, message: data['reason'] as String?);
+    // Cached on the phone so reopening the app shows the map at once; the
+    // models update hourly, so 45 minutes keeps the data current.
+    final body = await _fetcher.getText(
+      request.url,
+      query: query,
+      maxAge: const Duration(minutes: 45),
+      keyPrefix: gridCachePrefix,
+    );
+    // Decoding a few hundred kB of JSON on the UI thread makes the app stutter.
+    final variables = request.variables;
+    final count = points.length;
+    final parsed = await parseGridInBackground(body.data, variables, count);
+    if (parsed.error != null) {
+      throw ApiException(ApiErrorKind.badRequest, message: parsed.error);
     }
-    final list = data is List ? data : [data];
-    final result = <PointSeries?>[];
-    for (var i = 0; i < points.length; i++) {
-      if (i >= list.length || list[i] is! Map) {
-        result.add(null);
-        continue;
-      }
-      final hourly = (list[i] as Map)['hourly'];
-      if (hourly is! Map || hourly['time'] is! List) {
-        result.add(null);
-        continue;
-      }
-      final times = hourly['time'] as List;
-      if (times.isEmpty) {
-        result.add(null);
-        continue;
-      }
-      final start = (times.first as num).toInt();
-      final series = <String, Float32List>{};
-      for (final v in request.variables) {
-        final raw = hourly[v];
-        final arr = Float32List(times.length);
-        for (var t = 0; t < times.length; t++) {
-          final val = (raw is List && t < raw.length) ? raw[t] : null;
-          arr[t] = val is num ? val.toDouble() : double.nan;
-        }
-        series[v] = arr;
-      }
-      result.add(PointSeries(start, series));
-    }
-    return result;
+    return parsed.series;
   }
+}
+
+/// Top-level so the isolate closure does not capture `this` (Dio, database).
+Future<ParsedGrid> parseGridInBackground(String body, List<String> variables, int count) =>
+    Isolate.run(() => parseGridResponse(body, variables, count));
+
+/// Cache-key prefix of map grid responses (pruned more often than others).
+const String gridCachePrefix = 'grid:';
+
+class ParsedGrid {
+  const ParsedGrid(this.series, [this.error]);
+  final List<PointSeries?> series;
+  final String? error;
+}
+
+/// Parses an Open-Meteo multi-location response. Runs in a background isolate.
+ParsedGrid parseGridResponse(String body, List<String> variables, int count) {
+  Object? data;
+  try {
+    data = jsonDecode(body);
+  } on FormatException catch (e) {
+    return ParsedGrid(const [], 'Invalid JSON: ${e.message}');
+  }
+  if (data is Map && data['error'] == true) {
+    return ParsedGrid(const [], data['reason'] as String? ?? 'error');
+  }
+  final list = data is List ? data : [data];
+  final result = <PointSeries?>[];
+  for (var i = 0; i < count; i++) {
+    if (i >= list.length || list[i] is! Map) {
+      result.add(null);
+      continue;
+    }
+    final hourly = (list[i] as Map)['hourly'];
+    if (hourly is! Map || hourly['time'] is! List) {
+      result.add(null);
+      continue;
+    }
+    final times = hourly['time'] as List;
+    if (times.isEmpty) {
+      result.add(null);
+      continue;
+    }
+    final start = (times.first as num).toInt();
+    final series = <String, Float32List>{};
+    for (final v in variables) {
+      final raw = hourly[v];
+      final arr = Float32List(times.length);
+      for (var t = 0; t < times.length; t++) {
+        final val = (raw is List && t < raw.length) ? raw[t] : null;
+        arr[t] = val is num ? val.toDouble() : double.nan;
+      }
+      series[v] = arr;
+    }
+    result.add(PointSeries(start, series));
+  }
+  return ParsedGrid(result);
 }
