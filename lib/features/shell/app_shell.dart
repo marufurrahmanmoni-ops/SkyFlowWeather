@@ -11,8 +11,8 @@ import '../settings/settings_screen.dart';
 
 /// Bottom navigation: Map, Forecast, Radar, Favourites, Settings.
 ///
-/// The map stays alive (offstage) so returning to it is instant; the radar
-/// map is created only while its tab is open to save memory.
+/// Each map (main map and radar) is created only while its tab is open: a
+/// hidden native map view can cover the other tabs on Android.
 class AppShell extends ConsumerWidget {
   const AppShell({super.key});
 
@@ -41,18 +41,10 @@ class AppShell extends ConsumerWidget {
         if (!didPop && index != 0) ref.read(shellTabProvider.notifier).go(0);
       },
       child: Scaffold(
-        body: Stack(
-          children: [
-            Offstage(
-              offstage: index != 0,
-              child: TickerMode(
-                enabled: index == 0,
-                child: MapScreen(active: index == 0),
-              ),
-            ),
-            if (index != 0) Positioned.fill(child: page),
-          ],
-        ),
+        // The map is a native (platform) view. Keeping it alive offstage lets
+        // Android draw it on top of the other tabs, which then look blank,
+        // so it is only built while its tab is open.
+        body: index == 0 ? const MapScreen(active: true) : page,
         bottomNavigationBar: NavigationBar(
           selectedIndex: index,
           onDestinationSelected: (i) => ref.read(shellTabProvider.notifier).go(i),

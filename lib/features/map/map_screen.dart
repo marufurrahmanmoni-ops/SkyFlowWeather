@@ -41,6 +41,8 @@ class _MapScreenState extends ConsumerState<MapScreen> with SingleTickerProvider
   final ValueNotifier<MapViewport?> _viewport = ValueNotifier(null);
   late final OverlayEngine _engine;
   late final ParticleController _particles;
+  // Read once in initState so the camera can still be saved from dispose().
+  late final SettingsController _settingsNotifier;
   Size _size = Size.zero;
   GeoPoint? _selected;
   Place? _selectedPlace;
@@ -53,6 +55,7 @@ class _MapScreenState extends ConsumerState<MapScreen> with SingleTickerProvider
   @override
   void initState() {
     super.initState();
+    _settingsNotifier = ref.read(settingsProvider.notifier);
     final settings = ref.read(settingsProvider);
     final layer = LayerCatalog.byId(settings.lastLayer);
     _engine = OverlayEngine(
@@ -79,6 +82,9 @@ class _MapScreenState extends ConsumerState<MapScreen> with SingleTickerProvider
   @override
   void dispose() {
     _idleTimer?.cancel();
+    // Save a camera move that is still waiting for its debounce, since the
+    // map is disposed whenever the user switches to another tab.
+    if (_persistTimer?.isActive ?? false) _persistCamera();
     _persistTimer?.cancel();
     try {
       // The map widget may already have disposed its controller.
@@ -136,13 +142,15 @@ class _MapScreenState extends ConsumerState<MapScreen> with SingleTickerProvider
     _onCameraChanged();
     _scheduleReload();
     _persistTimer?.cancel();
-    _persistTimer = Timer(const Duration(seconds: 2), () {
-      final vp = _viewport.value;
-      if (vp == null) return;
-      ref.read(settingsProvider.notifier).update(
-            (s) => s.copyWith(cameraLat: vp.lat, cameraLon: vp.lon, cameraZoom: vp.zoom),
-          );
-    });
+    _persistTimer = Timer(const Duration(seconds: 2), _persistCamera);
+  }
+
+  void _persistCamera() {
+    final vp = _viewport.value;
+    if (vp == null) return;
+    _settingsNotifier.update(
+      (s) => s.copyWith(cameraLat: vp.lat, cameraLon: vp.lon, cameraZoom: vp.zoom),
+    );
   }
 
   void _scheduleReload({bool immediate = false}) {
