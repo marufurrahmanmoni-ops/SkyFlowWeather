@@ -383,6 +383,14 @@ class _RadarScreenState extends ConsumerState<RadarScreen> {
                 scrollDirection: Axis.horizontal,
                 padding: const EdgeInsets.symmetric(horizontal: 12),
                 children: [
+                  Padding(
+                    padding: const EdgeInsets.only(right: 8),
+                    child: ActionChip(
+                      avatar: const Icon(Icons.flag_circle, size: 18, color: Color(0xFF2EBD6B)),
+                      label: Text(s.bdShort),
+                      onPressed: () => ref.read(radarBdModeProvider.notifier).set(true),
+                    ),
+                  ),
                   for (final p in ImageryCatalog.all)
                     Padding(
                       padding: const EdgeInsets.only(right: 8),

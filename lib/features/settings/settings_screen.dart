@@ -154,7 +154,21 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 if (!ok && context.mounted) showMessage(context, s.notificationPermissionDenied);
               }
               n.update((x) => x.copyWith(backgroundAlerts: v));
-              await BackgroundWorker.setEnabled(v);
+              await BackgroundWorker.sync(ref.read(settingsProvider));
+            },
+          ),
+          SwitchListTile(
+            secondary: const Icon(Icons.campaign_outlined),
+            title: Text(s.notifyBmdAll),
+            subtitle: Text(s.notifyBmdAllHint),
+            value: settings.bmdAllWarnings,
+            onChanged: (v) async {
+              if (v) {
+                final ok = await NotificationService.instance.requestPermission();
+                if (!ok && context.mounted) showMessage(context, s.notificationPermissionDenied);
+              }
+              n.update((x) => x.copyWith(bmdAllWarnings: v));
+              await BackgroundWorker.sync(ref.read(settingsProvider));
             },
           ),
           ListTile(

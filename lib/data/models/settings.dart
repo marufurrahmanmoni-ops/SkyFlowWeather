@@ -63,6 +63,7 @@ class AppSettings {
     this.showArrows = true,
     this.reduceMotion = false,
     this.backgroundAlerts = false,
+    this.bmdAllWarnings = true,
     this.lastLayer = 'windSpeed',
     this.layerOpacity = const {},
     this.lastPlace,
@@ -87,6 +88,9 @@ class AppSettings {
   final bool showArrows;
   final bool reduceMotion;
   final bool backgroundAlerts;
+
+  /// Notify every new Bangladesh Meteorological Department warning.
+  final bool bmdAllWarnings;
   final String lastLayer;
   final Map<String, double> layerOpacity;
   final Place? lastPlace;
@@ -113,6 +117,7 @@ class AppSettings {
     bool? showArrows,
     bool? reduceMotion,
     bool? backgroundAlerts,
+    bool? bmdAllWarnings,
     String? lastLayer,
     Map<String, double>? layerOpacity,
     Place? lastPlace,
@@ -137,6 +142,7 @@ class AppSettings {
       showArrows: showArrows ?? this.showArrows,
       reduceMotion: reduceMotion ?? this.reduceMotion,
       backgroundAlerts: backgroundAlerts ?? this.backgroundAlerts,
+      bmdAllWarnings: bmdAllWarnings ?? this.bmdAllWarnings,
       lastLayer: lastLayer ?? this.lastLayer,
       layerOpacity: layerOpacity ?? this.layerOpacity,
       lastPlace: lastPlace ?? this.lastPlace,
@@ -163,6 +169,7 @@ class AppSettings {
         'showArrows': showArrows,
         'reduceMotion': reduceMotion,
         'backgroundAlerts': backgroundAlerts,
+        'bmdAllWarnings': bmdAllWarnings,
         'lastLayer': lastLayer,
         'layerOpacity': layerOpacity,
         'lastPlace': lastPlace?.toJson(),
@@ -201,6 +208,7 @@ class AppSettings {
       showArrows: b('showArrows', d.showArrows),
       reduceMotion: b('reduceMotion', d.reduceMotion),
       backgroundAlerts: b('backgroundAlerts', d.backgroundAlerts),
+      bmdAllWarnings: b('bmdAllWarnings', d.bmdAllWarnings),
       lastLayer: json['lastLayer'] as String? ?? d.lastLayer,
       layerOpacity: opacity,
       lastPlace: Place.tryFromJson(json['lastPlace']),

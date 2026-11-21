@@ -9,6 +9,8 @@ import '../../core/theme.dart';
 import '../../core/units.dart';
 import '../../data/models/forecast.dart';
 import '../../data/models/place.dart';
+import '../../data/sources/rain_nowcast.dart';
+import '../../services/home_widget_service.dart';
 import '../../services/moon.dart';
 import '../../state/providers.dart';
 import '../common/weather_icon.dart';
@@ -36,16 +38,17 @@ class OverviewTab extends ConsumerWidget {
       error: (e, _) => ErrorView(error: e, onRetry: () => ref.invalidate(forecastProvider(place))),
       data: (bundle) => RefreshIndicator(
         onRefresh: () => _refresh(ref),
-        child: _OverviewList(bundle: bundle),
+        child: _OverviewList(bundle: bundle, place: place),
       ),
     );
   }
 }
 
 class _OverviewList extends ConsumerWidget {
-  const _OverviewList({required this.bundle});
+  const _OverviewList({required this.bundle, required this.place});
 
   final ForecastBundle bundle;
+  final Place place;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -78,6 +81,7 @@ class _OverviewList extends ConsumerWidget {
           ),
         _CurrentHero(f: f, units: units, strings: s, hourIndex: hi),
         const SizedBox(height: 12),
+        _NowcastCard(place: place),
         _DetailsGrid(bundle: bundle, units: units, strings: s, hourIndex: hi, fmt: fmt),
         const SizedBox(height: 12),
         SectionCard(
@@ -843,6 +847,96 @@ class _MarineCard extends StatelessWidget {
             cell(s.seaTemperature, units.format(Quantity.temperature, c['sea_surface_temperature'])),
           ]),
         ],
+      ),
+    );
+  }
+}
+
+/// Rain in the next two hours in 15-minute steps.
+class _NowcastCard extends ConsumerWidget {
+  const _NowcastCard({required this.place});
+
+  final Place place;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final async = ref.watch(placeNowcastProvider(place));
+    final n = async.value;
+    // Optional extra: stay out of the way while loading or on errors.
+    if (n == null) return const SizedBox.shrink();
+    final s = S.of(context);
+    final units = ref.watch(unitsProvider);
+    final fmt = ref.watch(timeFmtProvider);
+    final nowSec = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+    final wet = n.rainingNow || n.minutesUntilRain(nowSec) != null;
+    const maxMm = 2.0; // 8 mm/h fills the bar
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: SectionCard(
+        title: s.next2hRain,
+        trailing: n.probability == null
+            ? null
+            : Text('💧 ${units.format(Quantity.percent, n.probability!.toDouble())}',
+                style: const TextStyle(fontWeight: FontWeight.w700)),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(wet ? Icons.umbrella : Icons.wb_sunny_outlined,
+                    color: wet ? AppColors.accent : AppColors.amber, size: 20),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(HomeWidgetService.rainLine(s, n, nowSec),
+                      style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
+                ),
+                if (n.next2hMm >= RainNowcast.wetThreshold)
+                  Text(units.format(Quantity.precipAmount, n.next2hMm),
+                      style: const TextStyle(color: AppColors.textSecondary)),
+              ],
+            ),
+            const SizedBox(height: 12),
+            SizedBox(
+              height: 64,
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  for (var i = 0; i < n.stepMm.length; i++)
+                    Expanded(
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 3),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.end,
+                          children: [
+                            Container(
+                              height: 4 + 44 * (n.stepMm[i] / maxMm).clamp(0.0, 1.0),
+                              decoration: BoxDecoration(
+                                color: n.stepMm[i] >= RainNowcast.wetThreshold
+                                    ? AppColors.accent
+                                    : AppColors.stroke,
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              i.isEven
+                                  ? fmt.hm(DateTime.fromMillisecondsSinceEpoch(n.stepTimes[i] * 1000))
+                                  : '',
+                              maxLines: 1,
+                              overflow: TextOverflow.visible,
+                              style: const TextStyle(fontSize: 9.5, color: AppColors.textSecondary),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 6),
+            Text(s.nowcastModelNote, style: const TextStyle(fontSize: 10.5, color: AppColors.textMuted)),
+          ],
+        ),
       ),
     );
   }

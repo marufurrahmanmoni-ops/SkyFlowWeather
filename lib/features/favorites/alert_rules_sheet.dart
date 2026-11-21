@@ -46,7 +46,7 @@ class _AlertRulesSheetState extends ConsumerState<AlertRulesSheet> {
         (ref.read(favoritesProvider).value ?? const <FavoritePlace>[]).any((f) => f.alertRules.enabled);
     if (anyEnabled && !settings.backgroundAlerts) {
       ref.read(settingsProvider.notifier).update((x) => x.copyWith(backgroundAlerts: true));
-      await BackgroundWorker.setEnabled(true);
+      await BackgroundWorker.sync(ref.read(settingsProvider));
     }
     if (mounted) Navigator.of(context).pop();
   }

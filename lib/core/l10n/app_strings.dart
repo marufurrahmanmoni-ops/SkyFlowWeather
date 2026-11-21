@@ -177,6 +177,43 @@ class AppStrings {
   String get airgramNote => t('airgramNote');
   String get cloudLayers => t('cloudLayers');
 
+
+  // ------------------------------------------------- Bangladesh rain & radar
+  String get bdRainRadar => t('bdRainRadar');
+  String get bdShort => t('bdShort');
+  String get tabRainNow => t('tabRainNow');
+  String get tabBmdRadar => t('tabBmdRadar');
+  String get tabBafRadar => t('tabBafRadar');
+  String get tabWarningsCyclones => t('tabWarningsCyclones');
+  String get rainingNowLabel => t('rainingNowLabel');
+  String get rainContinuing => t('rainContinuing');
+  String get noRainNext2h => t('noRainNext2h');
+  String get next2hRain => t('next2hRain');
+  String get nowcastModelNote => t('nowcastModelNote');
+  String get openInBrowser => t('openInBrowser');
+  String get reload => t('reload');
+  String get webLoadFailed => t('webLoadFailed');
+  String get bmdWarnings => t('bmdWarnings');
+  String get noBmdWarnings => t('noBmdWarnings');
+  String get cycloneMapHint => t('cycloneMapHint');
+  String get showCyclonesOnMap => t('showCyclonesOnMap');
+  String get notifyBmdAll => t('notifyBmdAll');
+  String get notifyBmdAllHint => t('notifyBmdAllHint');
+  String get radarSiteNote => t('radarSiteNote');
+  String get rainLight => t('rainLight');
+  String get rainModerate => t('rainModerate');
+  String get rainHeavy => t('rainHeavy');
+  String get dry => t('dry');
+  String rainStartsIn(int minutes) => _f('rainStartsIn', {'m': _n(minutes)});
+  String rainStopsIn(int minutes) => _f('rainStopsIn', {'m': _n(minutes)});
+  String widgetUpdated(String time) => _f('widgetUpdated', {'t': time});
+  String mmNext2h(String mm) => _f('mmNext2h', {'mm': mm});
+  String _n(int v) {
+    if (!isBengali) return '$v';
+    const d = ['০', '১', '২', '৩', '৪', '৫', '৬', '৭', '৮', '৯'];
+    return '$v'.split('').map((c) => int.tryParse(c) == null ? c : d[int.parse(c)]).join();
+  }
+
   // ---------------------------------------------------------------- radar
   String get radarAndSatellite => t('radarAndSatellite');
   String get product => t('product');
@@ -291,6 +328,35 @@ class AppStrings {
 }
 
 const Map<String, String> _en = {
+  'bdRainRadar': 'Bangladesh rain & radar',
+  'bdShort': 'Bangladesh',
+  'tabRainNow': 'Rain by area',
+  'tabBmdRadar': 'BMD radar',
+  'tabBafRadar': 'BAF radar',
+  'tabWarningsCyclones': 'Warnings & cyclones',
+  'rainingNowLabel': 'Raining now',
+  'rainContinuing': 'Rain continuing',
+  'noRainNext2h': 'No rain in the next 2 h',
+  'next2hRain': 'Rain in the next 2 hours',
+  'nowcastModelNote': '15-minute values come from weather models (Open-Meteo), not radar. Check the BMD/BAF radar for what is falling right now.',
+  'openInBrowser': 'Open in browser',
+  'reload': 'Reload',
+  'webLoadFailed': 'The page could not be loaded. Check your connection, or the site may be down.',
+  'bmdWarnings': 'BMD warnings',
+  'noBmdWarnings': 'No active BMD warnings',
+  'cycloneMapHint': 'Active tropical cyclones (GDACS). Tracks are drawn on the Radar map.',
+  'showCyclonesOnMap': 'Show on radar map',
+  'notifyBmdAll': 'All BMD warnings',
+  'notifyBmdAllHint': 'Notify every new Bangladesh Meteorological Department warning (checked about every 30 min)',
+  'radarSiteNote': 'Official site shown inside the app. Its content and availability are controlled by the site owner.',
+  'rainLight': 'Light',
+  'rainModerate': 'Moderate',
+  'rainHeavy': 'Heavy',
+  'dry': 'Dry',
+  'rainStartsIn': 'Rain in ~{m} min',
+  'rainStopsIn': 'Stops in ~{m} min',
+  'widgetUpdated': 'Updated {t}',
+  'mmNext2h': '{mm} in 2 h',
   'appName': 'SkyFlow Weather',
   'navMap': 'Map',
   'navForecast': 'Forecast',
@@ -660,6 +726,35 @@ const Map<String, String> _en = {
 };
 
 const Map<String, String> _bn = {
+  'bdRainRadar': 'বাংলাদেশ বৃষ্টি ও রাডার',
+  'bdShort': 'বাংলাদেশ',
+  'tabRainNow': 'এলাকাভিত্তিক বৃষ্টি',
+  'tabBmdRadar': 'BMD রাডার',
+  'tabBafRadar': 'BAF রাডার',
+  'tabWarningsCyclones': 'সতর্কবার্তা ও ঘূর্ণিঝড়',
+  'rainingNowLabel': 'এখন বৃষ্টি হচ্ছে',
+  'rainContinuing': 'বৃষ্টি চলবে',
+  'noRainNext2h': 'আগামী ২ ঘণ্টায় বৃষ্টি নেই',
+  'next2hRain': 'আগামী ২ ঘণ্টায় বৃষ্টি',
+  'nowcastModelNote': '১৫ মিনিটের হিসাব আবহাওয়া মডেল (Open-Meteo) থেকে, রাডার থেকে নয়। এই মুহূর্তে কোথায় বৃষ্টি হচ্ছে দেখতে BMD/BAF রাডার দেখুন।',
+  'openInBrowser': 'ব্রাউজারে খুলুন',
+  'reload': 'আবার লোড করুন',
+  'webLoadFailed': 'পেজটি লোড হয়নি। ইন্টারনেট সংযোগ দেখুন, অথবা সাইটটি এখন বন্ধ থাকতে পারে।',
+  'bmdWarnings': 'BMD সতর্কবার্তা',
+  'noBmdWarnings': 'এখন BMD-র কোনো সক্রিয় সতর্কবার্তা নেই',
+  'cycloneMapHint': 'সক্রিয় ঘূর্ণিঝড় (GDACS)। গতিপথ Radar ম্যাপে আঁকা থাকে।',
+  'showCyclonesOnMap': 'রাডার ম্যাপে দেখুন',
+  'notifyBmdAll': 'BMD-র সব সতর্কবার্তা',
+  'notifyBmdAllHint': 'আবহাওয়া অধিদপ্তরের প্রতিটি নতুন সতর্কবার্তার নোটিফিকেশন (প্রায় ৩০ মিনিট পরপর চেক)',
+  'radarSiteNote': 'অফিশিয়াল সাইটটি অ্যাপের ভেতরে দেখানো হচ্ছে। এর তথ্য ও চালু থাকা সাইটের মালিকের নিয়ন্ত্রণে।',
+  'rainLight': 'হালকা',
+  'rainModerate': 'মাঝারি',
+  'rainHeavy': 'ভারী',
+  'dry': 'শুকনো',
+  'rainStartsIn': 'প্রায় {m} মিনিটে বৃষ্টি',
+  'rainStopsIn': 'প্রায় {m} মিনিটে থামবে',
+  'widgetUpdated': 'আপডেট {t}',
+  'mmNext2h': '২ ঘণ্টায় {mm}',
   'appName': 'স্কাইফ্লো ওয়েদার',
   'navMap': 'মানচিত্র',
   'navForecast': 'পূর্বাভাস',

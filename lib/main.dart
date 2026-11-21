@@ -36,8 +36,9 @@ Future<void> main() async {
   // Drop old cached responses to keep storage small (map grids go stale fast).
   unawaited(db.pruneCache(const Duration(days: 7)).catchError((Object _) {}));
   unawaited(db.pruneCachePrefix(gridCachePrefix, const Duration(hours: 12)).catchError((Object _) {}));
-  unawaited(NotificationService.instance.init());
-  unawaited(BackgroundWorker.initialize().then((_) {
-    if (settings.backgroundAlerts) return BackgroundWorker.setEnabled(true);
+  unawaited(NotificationService.instance.init().then((_) {
+    // BMD warnings are on by default, so ask once for notification access.
+    if (settings.bmdAllWarnings) return NotificationService.instance.requestPermission();
   }));
+  unawaited(BackgroundWorker.initialize().then((_) => BackgroundWorker.sync(settings)));
 }

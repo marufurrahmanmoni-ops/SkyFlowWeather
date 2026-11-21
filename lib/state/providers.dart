@@ -20,9 +20,11 @@ import '../data/net/http.dart';
 import '../data/sources/geocoding.dart';
 import '../data/sources/interfaces.dart';
 import '../data/sources/open_meteo.dart';
+import '../data/sources/rain_nowcast.dart';
 import '../data/sources/warnings_sources.dart';
 import '../features/map/grid.dart' show GridRepository;
 import '../services/alert_engine.dart';
+import '../services/home_widget_service.dart';
 import '../services/location_service.dart';
 
 // ------------------------------------------------------------------ core
@@ -73,15 +75,19 @@ final gdacsSourceProvider = Provider<GdacsSource>(
   (ref) => GdacsSource(ref.watch(fetcherProvider)),
 );
 
+/// The Bangladesh Meteorological Department CAP warning feed.
+CapRssWarningSource bmdWarningSource(CachedFetcher fetcher) => CapRssWarningSource(
+      fetcher: fetcher,
+      id: 'BMD',
+      label: 'Bangladesh Meteorological Department',
+      feedUrl: Endpoints.bmdCapRss,
+      countryCode: 'BD',
+      region: bangladeshRegion,
+      maxItems: 15,
+    );
+
 List<WarningSource> buildWarningSources(CachedFetcher fetcher, GdacsSource gdacs) => [
-      CapRssWarningSource(
-        fetcher: fetcher,
-        id: 'BMD',
-        label: 'Bangladesh Meteorological Department',
-        feedUrl: Endpoints.bmdCapRss,
-        countryCode: 'BD',
-        region: bangladeshRegion,
-      ),
+      bmdWarningSource(fetcher),
       NwsWarningSource(fetcher),
       gdacs,
     ];
@@ -342,4 +348,54 @@ final reverseGeocodeProvider =
   } catch (_) {
     return null;
   }
+});
+
+// ------------------------------------------------- Bangladesh rain & radar
+
+final rainNowcastSourceProvider = Provider<RainNowcastSource>(
+  (ref) => RainNowcastSource(ref.watch(fetcherProvider)),
+);
+
+/// Rain now and in the next two hours for the towns in [bdCities].
+final bdRainProvider = FutureProvider.autoDispose<List<RainNowcast?>>((ref) async {
+  _keepAliveFor(ref, const Duration(minutes: 10));
+  return ref.watch(rainNowcastSourceProvider).fetch([for (final c in bdCities) (c.lat, c.lon)]);
+});
+
+/// Rain in the next two hours for one place (Forecast overview card).
+final placeNowcastProvider =
+    FutureProvider.autoDispose.family<RainNowcast?, Place>((ref, place) async {
+  _keepAliveFor(ref, const Duration(minutes: 10));
+  final list = await ref.watch(rainNowcastSourceProvider).fetch([(place.lat, place.lon)]);
+  return list.firstOrNull;
+});
+
+/// Every active BMD warning, wherever it applies.
+final bmdWarningsProvider = FutureProvider.autoDispose<List<OfficialWarning>>((ref) async {
+  _keepAliveFor(ref, const Duration(minutes: 5));
+  return bmdWarningSource(ref.watch(fetcherProvider)).allActive(language: ref.watch(languageProvider));
+});
+
+/// Whether the Radar tab shows the Bangladesh rain & radar screen instead of
+/// the map (swapped in place so two native map views never overlap).
+class RadarBdModeController extends Notifier<bool> {
+  @override
+  bool build() => false;
+
+  void set(bool open) => state = open;
+}
+
+final radarBdModeProvider = NotifierProvider<RadarBdModeController, bool>(RadarBdModeController.new);
+
+/// Redraws the home-screen widget whenever the selected place or the
+/// language changes (watched by the app shell).
+final homeWidgetSyncProvider = Provider<void>((ref) {
+  final place = ref.watch(selectedPlaceProvider);
+  final language = ref.watch(languageProvider);
+  unawaited(HomeWidgetService.refresh(
+    fetcher: ref.read(fetcherProvider),
+    settings: ref.read(settingsProvider),
+    language: language,
+    place: place,
+  ));
 });

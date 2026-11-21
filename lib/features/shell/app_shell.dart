@@ -3,6 +3,7 @@ import 'package:material_ui/material_ui.dart';
 
 import '../../core/l10n/localizations.dart';
 import '../../state/providers.dart';
+import '../bangladesh/bd_rain_screen.dart';
 import '../favorites/favorites_screen.dart';
 import '../forecast/forecast_screen.dart';
 import '../map/map_screen.dart';
@@ -20,13 +21,17 @@ class AppShell extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final s = S.of(context);
     final index = ref.watch(shellTabProvider);
+    final bdMode = ref.watch(radarBdModeProvider);
+    ref.watch(homeWidgetSyncProvider);
 
     Widget page;
     switch (index) {
       case 1:
         page = const ForecastScreen();
       case 2:
-        page = const RadarScreen();
+        // Swapped in place (not pushed over the radar) so the radar's native
+        // map view is gone while the web radars are shown.
+        page = bdMode ? const BdRainScreen() : const RadarScreen();
       case 3:
         page = const FavoritesScreen();
       case 4:
@@ -38,7 +43,12 @@ class AppShell extends ConsumerWidget {
     return PopScope(
       canPop: index == 0,
       onPopInvokedWithResult: (didPop, _) {
-        if (!didPop && index != 0) ref.read(shellTabProvider.notifier).go(0);
+        if (didPop) return;
+        if (index == 2 && bdMode) {
+          ref.read(radarBdModeProvider.notifier).set(false);
+        } else if (index != 0) {
+          ref.read(shellTabProvider.notifier).go(0);
+        }
       },
       child: Scaffold(
         // The map is a native (platform) view. Keeping it alive offstage lets

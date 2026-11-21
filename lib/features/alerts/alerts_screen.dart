@@ -92,7 +92,7 @@ class AlertsScreen extends ConsumerWidget {
                           ],
                         ),
                       ),
-                    for (final w in result.warnings) _WarningCard(warning: w, fmt: fmt, strings: s),
+                    for (final w in result.warnings) WarningCard(warning: w, fmt: fmt, strings: s),
                     if (result.failedSources.isNotEmpty)
                       Padding(
                         padding: const EdgeInsets.only(top: 8),
@@ -176,18 +176,19 @@ class AlertsScreen extends ConsumerWidget {
   }
 }
 
-class _WarningCard extends StatefulWidget {
-  const _WarningCard({required this.warning, required this.fmt, required this.strings});
+/// One official warning, tap to expand.
+class WarningCard extends StatefulWidget {
+  const WarningCard({super.key, required this.warning, required this.fmt, required this.strings});
 
   final OfficialWarning warning;
   final TimeFmt fmt;
   final AppStrings strings;
 
   @override
-  State<_WarningCard> createState() => _WarningCardState();
+  State<WarningCard> createState() => _WarningCardStateImpl();
 }
 
-class _WarningCardState extends State<_WarningCard> {
+class _WarningCardStateImpl extends State<WarningCard> {
   bool _expanded = false;
 
   @override

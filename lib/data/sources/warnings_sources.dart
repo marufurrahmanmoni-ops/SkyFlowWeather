@@ -109,6 +109,12 @@ class CapRssWarningSource implements WarningSource {
 
   @override
   Future<List<OfficialWarning>> activeFor(Place place, {required String language}) async {
+    final all = await allActive(language: language);
+    return [for (final w in all) if (w.covers(place.lat, place.lon, radiusKm: 25)) w];
+  }
+
+  /// Every active warning in the feed, whatever area it covers.
+  Future<List<OfficialWarning>> allActive({required String language}) async {
     final rss = await _fetcher.getText(feedUrl, maxAge: const Duration(minutes: 10));
     final items = MiniXml.elements(rss.data, 'item').take(maxItems).toList();
     final now = DateTime.now().toUtc();
@@ -132,7 +138,6 @@ class CapRssWarningSource implements WarningSource {
           ? w.expires!.isAfter(now)
           : (w.sent != null && now.difference(w.sent!).inHours < 36);
       if (!active) continue;
-      if (!w.covers(place.lat, place.lon, radiusKm: 25)) continue;
       result.add(w);
     }
     return result;
