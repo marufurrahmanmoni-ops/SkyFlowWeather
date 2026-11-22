@@ -64,6 +64,12 @@ class AppSettings {
     this.reduceMotion = false,
     this.backgroundAlerts = false,
     this.bmdAllWarnings = true,
+    this.rainAlarmEnabled = false,
+    this.rainAlarmPlace,
+    this.rainAlarmLeadMinutes = 60,
+    this.rainAlarmMinProbability = 60,
+    this.rainAlarmStorms = true,
+    this.rainAlarmVoice = true,
     this.lastLayer = 'windSpeed',
     this.layerOpacity = const {},
     this.lastPlace,
@@ -91,6 +97,22 @@ class AppSettings {
 
   /// Notify every new Bangladesh Meteorological Department warning.
   final bool bmdAllWarnings;
+
+  /// Rain/storm alarm for one chosen area.
+  final bool rainAlarmEnabled;
+  final Place? rainAlarmPlace;
+
+  /// How far ahead to warn (minutes).
+  final int rainAlarmLeadMinutes;
+
+  /// Lowest rain probability (percent) that sounds the alarm.
+  final int rainAlarmMinProbability;
+
+  /// Also alarm for thunderstorms and strong gusts.
+  final bool rainAlarmStorms;
+
+  /// Speak the warning aloud.
+  final bool rainAlarmVoice;
   final String lastLayer;
   final Map<String, double> layerOpacity;
   final Place? lastPlace;
@@ -118,6 +140,12 @@ class AppSettings {
     bool? reduceMotion,
     bool? backgroundAlerts,
     bool? bmdAllWarnings,
+    bool? rainAlarmEnabled,
+    Place? rainAlarmPlace,
+    int? rainAlarmLeadMinutes,
+    int? rainAlarmMinProbability,
+    bool? rainAlarmStorms,
+    bool? rainAlarmVoice,
     String? lastLayer,
     Map<String, double>? layerOpacity,
     Place? lastPlace,
@@ -143,6 +171,12 @@ class AppSettings {
       reduceMotion: reduceMotion ?? this.reduceMotion,
       backgroundAlerts: backgroundAlerts ?? this.backgroundAlerts,
       bmdAllWarnings: bmdAllWarnings ?? this.bmdAllWarnings,
+      rainAlarmEnabled: rainAlarmEnabled ?? this.rainAlarmEnabled,
+      rainAlarmPlace: rainAlarmPlace ?? this.rainAlarmPlace,
+      rainAlarmLeadMinutes: rainAlarmLeadMinutes ?? this.rainAlarmLeadMinutes,
+      rainAlarmMinProbability: rainAlarmMinProbability ?? this.rainAlarmMinProbability,
+      rainAlarmStorms: rainAlarmStorms ?? this.rainAlarmStorms,
+      rainAlarmVoice: rainAlarmVoice ?? this.rainAlarmVoice,
       lastLayer: lastLayer ?? this.lastLayer,
       layerOpacity: layerOpacity ?? this.layerOpacity,
       lastPlace: lastPlace ?? this.lastPlace,
@@ -170,6 +204,12 @@ class AppSettings {
         'reduceMotion': reduceMotion,
         'backgroundAlerts': backgroundAlerts,
         'bmdAllWarnings': bmdAllWarnings,
+        'rainAlarmEnabled': rainAlarmEnabled,
+        'rainAlarmPlace': rainAlarmPlace?.toJson(),
+        'rainAlarmLeadMinutes': rainAlarmLeadMinutes,
+        'rainAlarmMinProbability': rainAlarmMinProbability,
+        'rainAlarmStorms': rainAlarmStorms,
+        'rainAlarmVoice': rainAlarmVoice,
         'lastLayer': lastLayer,
         'layerOpacity': layerOpacity,
         'lastPlace': lastPlace?.toJson(),
@@ -209,6 +249,13 @@ class AppSettings {
       reduceMotion: b('reduceMotion', d.reduceMotion),
       backgroundAlerts: b('backgroundAlerts', d.backgroundAlerts),
       bmdAllWarnings: b('bmdAllWarnings', d.bmdAllWarnings),
+      rainAlarmEnabled: b('rainAlarmEnabled', d.rainAlarmEnabled),
+      rainAlarmPlace: Place.tryFromJson(json['rainAlarmPlace']),
+      rainAlarmLeadMinutes: (json['rainAlarmLeadMinutes'] as num?)?.toInt() ?? d.rainAlarmLeadMinutes,
+      rainAlarmMinProbability:
+          (json['rainAlarmMinProbability'] as num?)?.toInt() ?? d.rainAlarmMinProbability,
+      rainAlarmStorms: b('rainAlarmStorms', d.rainAlarmStorms),
+      rainAlarmVoice: b('rainAlarmVoice', d.rainAlarmVoice),
       lastLayer: json['lastLayer'] as String? ?? d.lastLayer,
       layerOpacity: opacity,
       lastPlace: Place.tryFromJson(json['lastPlace']),

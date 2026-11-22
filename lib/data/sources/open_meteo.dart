@@ -93,7 +93,10 @@ class OpenMeteoForecastSource implements ForecastSource {
       });
 
   @override
-  Future<ForecastBundle> forecast(Place place, {bool forceRefresh = false}) async {
+  Future<ForecastBundle> forecast(Place place,
+      {bool forceRefresh = false, void Function()? onRevalidated}) async {
+    // A saved forecast up to a day old is shown at once and refreshed behind.
+    final maxStale = onRevalidated == null ? null : const Duration(hours: 24);
     final forecastFuture = _fetcher.getJson(
       Endpoints.openMeteoForecast,
       query: {
@@ -105,6 +108,8 @@ class OpenMeteoForecastSource implements ForecastSource {
       },
       maxAge: const Duration(minutes: 15),
       forceRefresh: forceRefresh,
+      maxStale: maxStale,
+      onRevalidated: onRevalidated,
     );
     // Secondary datasets must never break the main forecast.
     final aqFuture = _optional(_fetcher.getJson(
@@ -118,6 +123,8 @@ class OpenMeteoForecastSource implements ForecastSource {
       },
       maxAge: const Duration(minutes: 30),
       forceRefresh: forceRefresh,
+      maxStale: maxStale,
+      onRevalidated: onRevalidated,
     ));
     final marineFuture = _optional(_fetcher.getJson(
       Endpoints.openMeteoMarine,
@@ -130,6 +137,8 @@ class OpenMeteoForecastSource implements ForecastSource {
       },
       maxAge: const Duration(minutes: 60),
       forceRefresh: forceRefresh,
+      maxStale: maxStale,
+      onRevalidated: onRevalidated,
     ));
     final astroFuture = _optional(_fetcher.getJson(
       Endpoints.openMeteoForecast,
@@ -140,6 +149,8 @@ class OpenMeteoForecastSource implements ForecastSource {
       },
       maxAge: const Duration(hours: 6),
       forceRefresh: forceRefresh,
+      maxStale: maxStale,
+      onRevalidated: onRevalidated,
     ));
 
     final f = await forecastFuture;

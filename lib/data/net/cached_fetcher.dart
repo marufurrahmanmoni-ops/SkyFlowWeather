@@ -39,11 +39,13 @@ class CachedFetcher {
     bool forceRefresh = false,
     bool persist = true,
     String keyPrefix = '',
+    Duration? maxStale,
+    void Function()? onRevalidated,
   }) {
     final key = '$keyPrefix${cacheKey(url, query)}';
     final existing = _inFlight[key];
     if (existing != null) return existing;
-    final future = _load(url, key, query, maxAge, headers, forceRefresh, persist);
+    final future = _load(url, key, query, maxAge, headers, forceRefresh, persist, maxStale, onRevalidated);
     _inFlight[key] = future;
     return future.whenComplete(() => _inFlight.remove(key));
   }
@@ -55,8 +57,10 @@ class CachedFetcher {
     Duration maxAge,
     Map<String, String>? headers,
     bool forceRefresh,
-    bool persist,
-  ) async {
+    bool persist, [
+    Duration? maxStale,
+    void Function()? onRevalidated,
+  ]) async {
     CachedBody? cached;
     if (persist) {
       try {
@@ -69,17 +73,23 @@ class CachedFetcher {
     if (!forceRefresh && cached != null && now.difference(cached.fetchedAt) < maxAge) {
       return FetchResult(cached.body, cached.fetchedAt);
     }
-    try {
-      final response = await _dio.get<String>(
-        url,
-        queryParameters: query,
-        options: Options(responseType: ResponseType.plain, headers: headers),
+    // Stale-while-revalidate: show the saved copy at once and refresh it in
+    // the background; [onRevalidated] fires once the new copy is saved.
+    if (!forceRefresh &&
+        persist &&
+        maxStale != null &&
+        cached != null &&
+        now.difference(cached.fetchedAt) < maxStale) {
+      final refresh = _revalidating.putIfAbsent(
+        key,
+        () => _network(url, key, query, headers, persist, awaitSave: true)
+            .whenComplete(() => _revalidating.remove(key)),
       );
-      final body = response.data ?? '';
-      if (persist) {
-        unawaited(_db.putCached(key, body).catchError((_) {}));
-      }
-      return FetchResult(body, DateTime.now());
+      unawaited(refresh.then((_) => onRevalidated?.call(), onError: (Object _) {}));
+      return FetchResult(cached.body, cached.fetchedAt);
+    }
+    try {
+      return await _network(url, key, query, headers, persist);
     } catch (e) {
       final apiError = toApiException(e);
       // Serve stale data when offline or when the service is struggling.
@@ -93,6 +103,33 @@ class CachedFetcher {
     }
   }
 
+  final Map<String, Future<FetchResult<String>>> _revalidating = {};
+
+  Future<FetchResult<String>> _network(
+    String url,
+    String key,
+    Map<String, dynamic>? query,
+    Map<String, String>? headers,
+    bool persist, {
+    bool awaitSave = false,
+  }) async {
+    final response = await _dio.get<String>(
+      url,
+      queryParameters: query,
+      options: Options(responseType: ResponseType.plain, headers: headers),
+    );
+    final body = response.data ?? '';
+    if (persist) {
+      final save = _db.putCached(key, body).catchError((_) {});
+      if (awaitSave) {
+        await save;
+      } else {
+        unawaited(save);
+      }
+    }
+    return FetchResult(body, DateTime.now());
+  }
+
   Future<FetchResult<Object?>> getJson(
     String url, {
     Map<String, dynamic>? query,
@@ -100,13 +137,17 @@ class CachedFetcher {
     Map<String, String>? headers,
     bool forceRefresh = false,
     bool persist = true,
+    Duration? maxStale,
+    void Function()? onRevalidated,
   }) async {
     final r = await getText(url,
         query: query,
         maxAge: maxAge,
         headers: headers,
         forceRefresh: forceRefresh,
-        persist: persist);
+        persist: persist,
+        maxStale: maxStale,
+        onRevalidated: onRevalidated);
     try {
       return FetchResult<Object?>(jsonDecode(r.data), r.fetchedAt, stale: r.stale);
     } on FormatException catch (e) {

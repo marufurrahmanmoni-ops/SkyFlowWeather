@@ -12,6 +12,7 @@ import '../../data/models/warnings.dart';
 import '../../data/sources/rain_nowcast.dart';
 import '../../services/home_widget_service.dart';
 import '../../state/providers.dart';
+import '../alarm/rain_alarm_screen.dart';
 import '../alerts/alerts_screen.dart' show WarningCard, severityColor;
 import '../common/widgets.dart';
 
@@ -31,6 +32,14 @@ class BdRainScreen extends ConsumerWidget {
           appBar: AppBar(
             leading: IconButton(icon: const Icon(Icons.arrow_back), onPressed: close),
             title: Text(s.bdRainRadar),
+            actions: [
+              IconButton(
+                tooltip: s.isBengali ? 'বৃষ্টি অ্যালার্ম' : 'Rain alarm',
+                icon: const Icon(Icons.alarm_add_outlined),
+                onPressed: () => Navigator.of(context)
+                    .push(MaterialPageRoute<void>(builder: (_) => const RainAlarmScreen())),
+              ),
+            ],
             bottom: TabBar(
               isScrollable: true,
               tabAlignment: TabAlignment.start,

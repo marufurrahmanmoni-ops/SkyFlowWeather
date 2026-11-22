@@ -17,7 +17,10 @@ abstract class ForecastSource {
   String get attribution;
   String get attributionUrl;
 
-  Future<ForecastBundle> forecast(Place place, {bool forceRefresh = false});
+  /// With [onRevalidated], an older saved forecast may be returned at once
+  /// while a fresh one downloads; the callback fires when it is saved.
+  Future<ForecastBundle> forecast(Place place,
+      {bool forceRefresh = false, void Function()? onRevalidated});
 
   /// Hourly forecast for several models; series keys are `variable_model`.
   Future<OmResponse> modelComparison(Place place, List<String> models,

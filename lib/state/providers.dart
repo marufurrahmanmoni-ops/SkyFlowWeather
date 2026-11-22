@@ -76,15 +76,7 @@ final gdacsSourceProvider = Provider<GdacsSource>(
 );
 
 /// The Bangladesh Meteorological Department CAP warning feed.
-CapRssWarningSource bmdWarningSource(CachedFetcher fetcher) => CapRssWarningSource(
-      fetcher: fetcher,
-      id: 'BMD',
-      label: 'Bangladesh Meteorological Department',
-      feedUrl: Endpoints.bmdCapRss,
-      countryCode: 'BD',
-      region: bangladeshRegion,
-      maxItems: 15,
-    );
+CapRssWarningSource bmdWarningSource(CachedFetcher fetcher) => bmdWarningSourceFor(fetcher);
 
 List<WarningSource> buildWarningSources(CachedFetcher fetcher, GdacsSource gdacs) => [
       bmdWarningSource(fetcher),
@@ -283,7 +275,14 @@ final forecastProvider =
     FutureProvider.autoDispose.family<ForecastBundle, Place>((ref, place) async {
   _keepAliveFor(ref, const Duration(minutes: 10));
   final force = ref.read(forceRefreshIdsProvider).remove(place.id);
-  return ref.watch(forecastSourceProvider).forecast(place, forceRefresh: force);
+  return ref.watch(forecastSourceProvider).forecast(
+    place,
+    forceRefresh: force,
+    // Saved data shows instantly; redraw when the fresh copy arrives.
+    onRevalidated: () {
+      if (ref.mounted) ref.invalidateSelf();
+    },
+  );
 });
 
 /// Models offered for comparison (Open-Meteo model ids, 2026 naming).
@@ -398,4 +397,37 @@ final homeWidgetSyncProvider = Provider<void>((ref) {
     language: language,
     place: place,
   ));
+});
+
+/// Detailed air quality (all pollutants and sub-indices, 5 days hourly).
+final airQualityDetailProvider =
+    FutureProvider.autoDispose.family<OmResponse, Place>((ref, place) async {
+  _keepAliveFor(ref, const Duration(minutes: 10));
+  final r = await ref.watch(fetcherProvider).getJson(
+        Endpoints.openMeteoAirQuality,
+        query: withOpenMeteoKey({
+          'latitude': place.lat.toStringAsFixed(4),
+          'longitude': place.lon.toStringAsFixed(4),
+          'timezone': 'auto',
+          'timeformat': 'unixtime',
+          'current': 'us_aqi,european_aqi,pm2_5,pm10,ozone,nitrogen_dioxide,sulphur_dioxide,'
+              'carbon_monoxide,dust,uv_index,aerosol_optical_depth,us_aqi_pm2_5,us_aqi_pm10,'
+              'us_aqi_ozone,us_aqi_nitrogen_dioxide,us_aqi_sulphur_dioxide,us_aqi_carbon_monoxide',
+          'hourly': 'us_aqi,european_aqi,pm2_5,pm10',
+          'forecast_days': 5,
+        }),
+        maxAge: const Duration(minutes: 30),
+        maxStale: const Duration(hours: 12),
+        onRevalidated: () {
+          if (ref.mounted) ref.invalidateSelf();
+        },
+      );
+  final data = r.data;
+  if (data is! Map<String, dynamic>) {
+    throw const ApiException(ApiErrorKind.unknown, message: 'Unexpected response');
+  }
+  if (data['error'] == true) {
+    throw ApiException(ApiErrorKind.badRequest, message: data['reason'] as String?);
+  }
+  return OmResponse.fromJson(data, fetchedAt: r.fetchedAt, stale: r.stale);
 });

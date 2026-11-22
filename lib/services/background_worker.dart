@@ -15,6 +15,7 @@ import '../state/providers.dart' show bmdWarningSource, buildWarningSources, loa
 import 'alert_engine.dart';
 import 'alert_text.dart';
 import 'home_widget_service.dart';
+import 'rain_alarm.dart';
 import 'notification_service.dart';
 
 const String _uniqueName = 'skyflow-alert-check';
@@ -49,7 +50,12 @@ class BackgroundWorker {
   /// every 3 hours for favourite alerts. The same run refreshes the
   /// home-screen widget, so it also runs when only the widget needs it.
   static Future<void> sync(AppSettings settings) => _schedule(
-        settings.bmdAllWarnings ? const Duration(minutes: 30) : const Duration(hours: 3),
+        settings.rainAlarmEnabled
+            // The shortest period Android allows; rain can arrive within the hour.
+            ? const Duration(minutes: 15)
+            : settings.bmdAllWarnings
+                ? const Duration(minutes: 30)
+                : const Duration(hours: 3),
       );
 
 
@@ -90,6 +96,15 @@ class AlertChecker {
     final forecastSource = OpenMeteoForecastSource(f);
     final warnings = WarningService(buildWarningSources(f, GdacsSource(f)));
     const engine = AlertEngine();
+    // The rain alarm is the most time-critical, so it goes first.
+    if (settings.rainAlarmEnabled) {
+      try {
+        await RainAlarmService.check(
+            fetcher: f, database: database, settings: settings, language: lang);
+      } catch (e) {
+        debugPrint('Rain alarm check failed: $e');
+      }
+    }
     // The home-screen widget is refreshed on every run.
     await HomeWidgetService.refresh(fetcher: f, settings: settings, language: lang);
 

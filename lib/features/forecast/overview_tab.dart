@@ -11,6 +11,7 @@ import '../../data/models/forecast.dart';
 import '../../data/models/place.dart';
 import '../../data/sources/rain_nowcast.dart';
 import '../../services/home_widget_service.dart';
+import '../air/air_quality_screen.dart';
 import '../../services/moon.dart';
 import '../../state/providers.dart';
 import '../common/weather_icon.dart';
@@ -111,7 +112,7 @@ class _OverviewList extends ConsumerWidget {
         _SunMoonCard(bundle: bundle, fmt: fmt, strings: s),
         if (bundle.airQuality != null) ...[
           const SizedBox(height: 12),
-          _AirQualityCard(aq: bundle.airQuality!, units: units, strings: s),
+          _AirQualityCard(aq: bundle.airQuality!, units: units, strings: s, place: place),
         ],
         if (bundle.hasMarine) ...[
           const SizedBox(height: 12),
@@ -739,9 +740,11 @@ class _MoonPainter extends CustomPainter {
 }
 
 class _AirQualityCard extends StatelessWidget {
-  const _AirQualityCard({required this.aq, required this.units, required this.strings});
+  const _AirQualityCard(
+      {required this.aq, required this.units, required this.strings, required this.place});
 
   final OmResponse aq;
+  final Place place;
   final UnitFormatter units;
   final AppStrings strings;
 
@@ -756,8 +759,18 @@ class _AirQualityCard extends StatelessWidget {
       return v == null ? '–' : '${units.number(v)} µg/m³';
     }
 
-    return SectionCard(
+    return InkWell(
+      borderRadius: BorderRadius.circular(20),
+      onTap: () => Navigator.of(context).push(
+        MaterialPageRoute<void>(builder: (_) => AirQualityScreen(place: place)),
+      ),
+      child: SectionCard(
       title: s.airQuality,
+      trailing: Row(mainAxisSize: MainAxisSize.min, children: [
+        Text(s.isBengali ? 'বিস্তারিত' : 'Details',
+            style: const TextStyle(fontSize: 12.5, color: AppColors.accent)),
+        const Icon(Icons.chevron_right, size: 18, color: AppColors.accent),
+      ]),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -804,6 +817,7 @@ class _AirQualityCard extends StatelessWidget {
           const SizedBox(height: 6),
           const Text('CAMS via Open-Meteo', style: TextStyle(fontSize: 11, color: AppColors.textMuted)),
         ],
+      ),
       ),
     );
   }

@@ -1,4 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="widget_description">Current weather and rain in the next 2 hours</string>
+    <string name="widget_large_description">Full weather: next hours, 3 days, AQI, UV, wind and warnings</string>
 </resources>

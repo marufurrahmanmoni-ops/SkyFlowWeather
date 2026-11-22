@@ -10,6 +10,8 @@ import '../../services/background_worker.dart';
 import '../../services/notification_service.dart';
 import '../../state/providers.dart';
 import '../common/widgets.dart';
+import '../alarm/rain_alarm_screen.dart';
+import '../widgets/add_widget_sheet.dart';
 import 'sources_screen.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
@@ -144,6 +146,24 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             onChanged: (v) => n.update((x) => x.copyWith(reduceMotion: v)),
           ),
           _header(context, s.alerts),
+          ListTile(
+            leading: Icon(settings.rainAlarmEnabled ? Icons.alarm_on : Icons.alarm_add_outlined,
+                color: settings.rainAlarmEnabled ? AppColors.accent : null),
+            title: Text(s.isBengali ? 'বৃষ্টি ও ঝড় অ্যালার্ম' : 'Rain & storm alarm'),
+            subtitle: Text(settings.rainAlarmEnabled
+                ? '${s.isBengali ? 'চালু' : 'On'} · ${settings.rainAlarmPlace?.name ?? ''}'
+                : (s.isBengali ? 'বন্ধ' : 'Off')),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => Navigator.of(context)
+                .push(MaterialPageRoute<void>(builder: (_) => const RainAlarmScreen())),
+          ),
+          ListTile(
+            leading: const Icon(Icons.widgets_outlined),
+            title: Text(s.isBengali ? 'হোম স্ক্রিন উইজেট' : 'Home-screen widget'),
+            subtitle: Text(s.isBengali ? 'বড় বা ছোট আবহাওয়া উইজেট যোগ করুন' : 'Add the large or small weather widget'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => showAddWidgetSheet(context),
+          ),
           SwitchListTile(
             title: Text(s.backgroundChecks),
             subtitle: Text(s.backgroundChecksHint),
