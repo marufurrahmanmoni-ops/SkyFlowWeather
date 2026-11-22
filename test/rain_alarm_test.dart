@@ -95,4 +95,19 @@ void main() {
     expect(euCategoryIndex(55), 2);
     expect(euCategoryIndex(130), 5);
   });
+
+  test('once vs repeat dedupe keys', () {
+    const e = RainAlarmEvent(kind: RainAlarmKind.rain, startSec: now + 2700, minutesUntil: 45);
+    final once = rainAlarmDedupeKeys('bd:dhaka', e, settings, now);
+    expect(once.check, hasLength(3));
+    expect(once.check, contains(once.mark));
+    // Same spell 20 minutes later: same keys.
+    expect(rainAlarmDedupeKeys('bd:dhaka', e, settings, now + 1200).mark, once.mark);
+
+    final rep = settings.copyWith(rainAlarmRepeatMinutes: 15);
+    final a = rainAlarmDedupeKeys('bd:dhaka', e, rep, now);
+    final b = rainAlarmDedupeKeys('bd:dhaka', e, rep, now + 900);
+    expect(a.mark, isNot(b.mark)); // rings again 15 minutes later
+    expect(rainAlarmDedupeKeys('bd:dhaka', e, rep, now + 60).mark, a.mark); // not twice in one slot
+  });
 }

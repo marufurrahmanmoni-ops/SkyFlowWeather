@@ -25,6 +25,8 @@ import '../data/sources/warnings_sources.dart';
 import '../features/map/grid.dart' show GridRepository;
 import '../services/alert_engine.dart';
 import '../services/home_widget_service.dart';
+import '../services/radar_analyzer.dart';
+import '../services/weather_ai.dart';
 import '../services/location_service.dart';
 
 // ------------------------------------------------------------------ core
@@ -430,4 +432,53 @@ final airQualityDetailProvider =
     throw ApiException(ApiErrorKind.badRequest, message: data['reason'] as String?);
   }
   return OmResponse.fromJson(data, fetchedAt: r.fetchedAt, stale: r.stale);
+});
+
+/// NASA IMERG rain images over Bangladesh, measured on the phone.
+final radarAnalysisProvider = FutureProvider.autoDispose<RadarAnalysis?>((ref) async {
+  _keepAliveFor(ref, const Duration(minutes: 20));
+  return RadarAnalyzer.analyzeLatest();
+});
+
+Future<T?> _optional<T>(Future<T> future) => future
+    .then<T?>((v) => v, onError: (Object _) => null)
+    .timeout(const Duration(seconds: 25), onTimeout: () => null);
+
+/// The on-device weather analyst's bulletin for [place]. Only the forecast
+/// is required; every other source is used when it can be had.
+final aiBriefingProvider = FutureProvider.autoDispose.family<AiBriefing, Place>((ref, place) async {
+  _keepAliveFor(ref, const Duration(minutes: 10));
+  final bundle = await ref.watch(forecastProvider(place).future);
+  final inBd = place.countryCode == 'BD' || bangladeshBox.contains(place.lat, place.lon);
+  final (nowcast, models, national, warnings, storms, radar) = await (
+    _optional(ref.watch(placeNowcastProvider(place).future)),
+    _optional(ref.watch(modelComparisonProvider(place).future)),
+    inBd ? _optional(ref.watch(bdRainProvider.future)) : Future<List<RainNowcast?>?>.value(null),
+    inBd ? _optional(ref.watch(bmdWarningsProvider.future)) : Future<List<OfficialWarning>?>.value(null),
+    _optional(ref.watch(stormsProvider.future)),
+    inBd ? _optional(ref.watch(radarAnalysisProvider.future)) : Future<RadarAnalysis?>.value(null),
+  ).wait;
+  final language = ref.watch(languageProvider);
+  return WeatherAi(
+    WeatherAiInput(
+      placeName: place.name,
+      forecast: bundle.forecast,
+      airQuality: bundle.airQuality,
+      nowSec: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+      nowcast: nowcast,
+      models: models,
+      modelIds: [for (final m in comparisonModels) m.id],
+      national: national == null
+          ? null
+          : [
+              for (var i = 0; i < bdCities.length && i < national.length; i++)
+                if (national[i] != null) (bdCities[i], national[i]!),
+            ],
+      warnings: warnings ?? const [],
+      storms: storms ?? const [],
+      radar: radar,
+    ),
+    bengali: language == 'bn',
+    units: ref.watch(unitsProvider),
+  ).build();
 });

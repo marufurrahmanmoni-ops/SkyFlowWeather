@@ -70,6 +70,7 @@ class AppSettings {
     this.rainAlarmMinProbability = 60,
     this.rainAlarmStorms = true,
     this.rainAlarmVoice = true,
+    this.rainAlarmRepeatMinutes = 0,
     this.lastLayer = 'windSpeed',
     this.layerOpacity = const {},
     this.lastPlace,
@@ -113,6 +114,10 @@ class AppSettings {
 
   /// Speak the warning aloud.
   final bool rainAlarmVoice;
+
+  /// 0: ring once per rain spell. Otherwise ring again every this many
+  /// minutes until the rain arrives.
+  final int rainAlarmRepeatMinutes;
   final String lastLayer;
   final Map<String, double> layerOpacity;
   final Place? lastPlace;
@@ -146,6 +151,7 @@ class AppSettings {
     int? rainAlarmMinProbability,
     bool? rainAlarmStorms,
     bool? rainAlarmVoice,
+    int? rainAlarmRepeatMinutes,
     String? lastLayer,
     Map<String, double>? layerOpacity,
     Place? lastPlace,
@@ -177,6 +183,7 @@ class AppSettings {
       rainAlarmMinProbability: rainAlarmMinProbability ?? this.rainAlarmMinProbability,
       rainAlarmStorms: rainAlarmStorms ?? this.rainAlarmStorms,
       rainAlarmVoice: rainAlarmVoice ?? this.rainAlarmVoice,
+      rainAlarmRepeatMinutes: rainAlarmRepeatMinutes ?? this.rainAlarmRepeatMinutes,
       lastLayer: lastLayer ?? this.lastLayer,
       layerOpacity: layerOpacity ?? this.layerOpacity,
       lastPlace: lastPlace ?? this.lastPlace,
@@ -210,6 +217,7 @@ class AppSettings {
         'rainAlarmMinProbability': rainAlarmMinProbability,
         'rainAlarmStorms': rainAlarmStorms,
         'rainAlarmVoice': rainAlarmVoice,
+        'rainAlarmRepeatMinutes': rainAlarmRepeatMinutes,
         'lastLayer': lastLayer,
         'layerOpacity': layerOpacity,
         'lastPlace': lastPlace?.toJson(),
@@ -256,6 +264,8 @@ class AppSettings {
           (json['rainAlarmMinProbability'] as num?)?.toInt() ?? d.rainAlarmMinProbability,
       rainAlarmStorms: b('rainAlarmStorms', d.rainAlarmStorms),
       rainAlarmVoice: b('rainAlarmVoice', d.rainAlarmVoice),
+      rainAlarmRepeatMinutes:
+          (json['rainAlarmRepeatMinutes'] as num?)?.toInt() ?? d.rainAlarmRepeatMinutes,
       lastLayer: json['lastLayer'] as String? ?? d.lastLayer,
       layerOpacity: opacity,
       lastPlace: Place.tryFromJson(json['lastPlace']),

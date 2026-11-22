@@ -214,6 +214,55 @@ class _RainAlarmScreenState extends ConsumerState<RainAlarmScreen> {
           ),
           const SizedBox(height: 12),
           SectionCard(
+            title: t('How often to ring', 'কতবার বাজবে'),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                RadioGroup<int>(
+                  groupValue: settings.rainAlarmRepeatMinutes == 0 ? 0 : 1,
+                  onChanged: (v) => _update((s) => s.copyWith(
+                      rainAlarmRepeatMinutes: v == 0 ? 0 : (s.rainAlarmRepeatMinutes == 0 ? 15 : s.rainAlarmRepeatMinutes))),
+                  child: Column(
+                    children: [
+                      RadioListTile<int>(
+                        contentPadding: EdgeInsets.zero,
+                        value: 0,
+                        title: Text(t('Once per rain', 'একই বৃষ্টির জন্য একবার')),
+                        subtitle: Text(t('One alarm for each coming rain spell', 'প্রতিটি আসন্ন বৃষ্টির জন্য একটাই অ্যালার্ম')),
+                      ),
+                      RadioListTile<int>(
+                        contentPadding: EdgeInsets.zero,
+                        value: 1,
+                        title: Text(t('Repeat until it rains', 'বৃষ্টি না আসা পর্যন্ত বারবার')),
+                        subtitle: Text(t('Rings again with the updated time until the rain arrives',
+                            'বৃষ্টি না আসা পর্যন্ত নতুন সময় জানিয়ে আবার বাজবে')),
+                      ),
+                    ],
+                  ),
+                ),
+                if (settings.rainAlarmRepeatMinutes > 0) ...[
+                  const SizedBox(height: 4),
+                  SegmentedButton<int>(
+                    segments: [
+                      ButtonSegment(value: 15, label: Text(t('15 min', '১৫ মি.'))),
+                      ButtonSegment(value: 30, label: Text(t('30 min', '৩০ মি.'))),
+                      ButtonSegment(value: 60, label: Text(t('1 h', '১ ঘ.'))),
+                    ],
+                    selected: {settings.rainAlarmRepeatMinutes},
+                    onSelectionChanged: (v) => _update((s) => s.copyWith(rainAlarmRepeatMinutes: v.first)),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    t('Every ${settings.rainAlarmRepeatMinutes} minutes (Android may stretch this a little).',
+                        'প্রতি ${settings.rainAlarmRepeatMinutes == 60 ? '৬০' : settings.rainAlarmRepeatMinutes == 30 ? '৩০' : '১৫'} মিনিট পরপর (Android সামান্য দেরি করাতে পারে)।'),
+                    style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                  ),
+                ],
+              ],
+            ),
+          ),
+          const SizedBox(height: 12),
+          SectionCard(
             child: Column(
               children: [
                 SwitchListTile(

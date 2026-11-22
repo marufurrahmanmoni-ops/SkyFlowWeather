@@ -11,6 +11,7 @@ import '../../data/models/forecast.dart';
 import '../../data/models/place.dart';
 import '../../data/sources/rain_nowcast.dart';
 import '../../services/home_widget_service.dart';
+import '../ai/ai_briefing_screen.dart';
 import '../air/air_quality_screen.dart';
 import '../../services/moon.dart';
 import '../../state/providers.dart';
@@ -82,6 +83,7 @@ class _OverviewList extends ConsumerWidget {
           ),
         _CurrentHero(f: f, units: units, strings: s, hourIndex: hi),
         const SizedBox(height: 12),
+        AiBriefingCard(place: place),
         _NowcastCard(place: place),
         _DetailsGrid(bundle: bundle, units: units, strings: s, hourIndex: hi, fmt: fmt),
         const SizedBox(height: 12),

@@ -12,6 +12,7 @@ import '../../data/models/warnings.dart';
 import '../../data/sources/rain_nowcast.dart';
 import '../../services/home_widget_service.dart';
 import '../../state/providers.dart';
+import '../ai/ai_briefing_screen.dart';
 import '../alarm/rain_alarm_screen.dart';
 import '../alerts/alerts_screen.dart' show WarningCard, severityColor;
 import '../common/widgets.dart';
@@ -33,6 +34,16 @@ class BdRainScreen extends ConsumerWidget {
             leading: IconButton(icon: const Icon(Icons.arrow_back), onPressed: close),
             title: Text(s.bdRainRadar),
             actions: [
+              IconButton(
+                tooltip: s.isBengali ? 'AI আবহাওয়া বার্তা' : 'AI weather update',
+                icon: const Text('🤖', style: TextStyle(fontSize: 20)),
+                onPressed: () => Navigator.of(context).push(MaterialPageRoute<void>(
+                  builder: (_) => AiBriefingScreen(
+                    place: ref.read(selectedPlaceProvider) ??
+                        placeFromCity(bdCities.first, s.isBengali),
+                  ),
+                )),
+              ),
               IconButton(
                 tooltip: s.isBengali ? 'বৃষ্টি অ্যালার্ম' : 'Rain alarm',
                 icon: const Icon(Icons.alarm_add_outlined),

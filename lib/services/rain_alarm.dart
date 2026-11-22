@@ -177,6 +177,26 @@ String formatLead(int minutes, bool bn) {
   return (title, body);
 }
 
+/// Keys that decide whether the alarm may ring again.
+/// Once mode: one alarm per rain spell (forecasts shift, so the hours next to
+/// the expected start count as the same spell). Repeat mode: again every
+/// [AppSettings.rainAlarmRepeatMinutes] until the rain arrives.
+({List<String> check, String mark}) rainAlarmDedupeKeys(
+    String placeId, RainAlarmEvent event, AppSettings settings, int nowSec) {
+  final repeat = settings.rainAlarmRepeatMinutes;
+  if (repeat <= 0) {
+    final bucket = event.startSec ~/ 3600;
+    return (
+      check: [for (final b in [bucket - 1, bucket, bucket + 1]) 'rainalarm:$placeId:$b'],
+      mark: 'rainalarm:$placeId:$bucket',
+    );
+  }
+  // A small allowance so a check that runs a minute early still counts.
+  final slot = (nowSec + 120) ~/ (repeat * 60);
+  final k = 'rainalarm:$placeId:r$repeat:$slot';
+  return (check: [k], mark: k);
+}
+
 /// Downloads the next 3 hours for the alarm place and sounds the alarm.
 class RainAlarmService {
   RainAlarmService._();
@@ -216,12 +236,11 @@ class RainAlarmService {
     final nowSec = DateTime.now().millisecondsSinceEpoch ~/ 1000;
     final event = evaluateRainAlarm(data, settings, nowSec);
     if (event == null) return false;
-    // One alarm per rain spell: forecasts shift, so nearby hours count as the same.
-    final bucket = event.startSec ~/ 3600;
-    for (final b in [bucket - 1, bucket, bucket + 1]) {
-      if (await database.wasNotified('rainalarm:${place.id}:$b')) return false;
+    final key = rainAlarmDedupeKeys(place.id, event, settings, nowSec);
+    for (final k in key.check) {
+      if (await database.wasNotified(k)) return false;
     }
-    await database.markNotified('rainalarm:${place.id}:$bucket');
+    await database.markNotified(key.mark);
     await ring(event, place.name, language, voice: settings.rainAlarmVoice);
     return true;
   }
