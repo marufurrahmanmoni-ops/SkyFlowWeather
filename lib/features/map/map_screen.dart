@@ -15,7 +15,6 @@ import '../../state/providers.dart';
 import '../common/widgets.dart';
 import '../search/search_screen.dart';
 import '../settings/sources_screen.dart';
-import 'grid.dart';
 import 'layer_catalog.dart';
 import 'layer_sheet.dart';
 import 'map_viewport.dart';

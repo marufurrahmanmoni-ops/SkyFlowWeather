@@ -324,7 +324,7 @@ class WeatherAi {
           '$cold (সর্বনিম্ন ${temp(d.at('temperature_2m_min', 0))}): গরম কাপড় পরুন, শিশু ও বয়স্কদের যত্ন নিন।'));
     }
     final h = f.hourly;
-    if (h.isNotEmpty) {
+    if (!h.isEmpty) {
       final i0 = h.indexFor(input.nowSec).clamp(0, h.length - 1);
       var fog = false;
       for (var i = i0; i < math.min(h.length, i0 + 18); i++) {

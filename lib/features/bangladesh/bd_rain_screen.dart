@@ -2,7 +2,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 
-import '../../core/format.dart';
 import '../../core/l10n/app_strings.dart';
 import '../../core/l10n/localizations.dart';
 import '../../core/theme.dart';
